@@ -1,0 +1,46 @@
+intro MLlib
+
+ * machine learning
+ ** ML == statistical modeling applied to large, unstructured data sets
+ ** classification, regression, clustering, latent variable models, ...
+ ** training == estimating parameters (usually maximum likelihood)
+ 
+ * opportunities for parallelization
+ ** applying same operation to many records
+ *** e.g. log likelihood = sum over records
+ ** partition available data into blockcompare actual to estimate over recordss
+ *** e.g. cross validation = train and test on partitions of record set
+ ** Monte Carlo methods
+ *** esp. Markov chain Monte Carlo
+ *** randomized search
+ *** ensemble methods
+
+ * MLlib
+ ** basic statistical stuff
+ ** classification and regression
+ ** collaborative filtering
+ ** clustering
+ ** dimensionality reduction
+ ** feature extraction and transformation
+ ** optimization functions
+ ** implemented in two packages, spark.mllib which is based on RDD's
+    and spark.ml which is based on DataFrames; we'll talk about spark.mllib today
+
+ * Resilient Distributed Dataset (RDD)
+ ** immutable
+ *** transform one RDD into another -- Can  
+     only be built through coarse-grained transformations
+ *** create initial RDD from a file or data in memory
+ ** distributed
+ *** partitions of records live on nodes in a Spark cluster
+ ** fault-tolerant
+ *** recover from failures via lineage
+ *** recompute starting from most recent checkpoint
+ *** no cost if not failures
+ 
+ * Operations on RDD
+ ** transformations: map, filter, join, sample, union, ...
+ ** actions: collect, reduce, count, save
+
+ * Other MLlib topics not covered today
+ ** 

@@ -1,0 +1,14 @@
+load (distrib);
+
+x : apply (matrix, append (makelist (random_normal (-1, 1, 2), 10), makelist (random_normal (1, 1, 2), 10)));
+c : apply (matrix, append (makelist ([0], 10), makelist ([1], 10)));
+
+ce1 (w, b, x1, c1) := block ([z, p], z : w.x1 + b, p : 1/(1 + exp (-z)), - c1*log(p) - (1 - c1)*log(1 - p));
+
+ce (w, b, x, c) := sum (ce1 (w, b, x[i], c[i][1]), i, 1, length (c));
+
+contour_plot (lambda ([w1, w2], ce ([w1, w2], b, x, c)), [w1, -10, 10], [w2, -10, 10], [grid, n, n]), b = 0, n = 30;
+
+with_stdout ("./tmp.data-libsvm",
+  for i thru length (c)
+    do printf (true, "~a 1:~a 2:~a~%", c[i, 1], x[i, 1], x[i, 2]));

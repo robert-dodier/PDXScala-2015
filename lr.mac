@@ -1,0 +1,73 @@
+linel : 120;
+fpprintprec : 6;
+load (descriptive);
+
+data : read_matrix ("lr.data-libsvm");
+
+c : col (data, 1);
+x : addcol (col (data, 4), col (data, 7));
+
+n : length (c);
+
+xc0 : apply (matrix, makelist (x[i], i, sublist (makelist (i, i, 1, n), lambda ([ii], c[ii, 1] = 0))));
+xc1 : apply (matrix, makelist (x[i], i, sublist (makelist (i, i, 1, n), lambda ([ii], c[ii, 1] = 1))));
+
+xc0_mean : mean (xc0);
+cov0 : cov (xc0);
+inv_cov0 : invert (cov0);
+
+xc1_mean : mean (xc1);
+cov1 : cov (xc1);
+inv_cov1 : invert (cov1);
+
+pc0 : pc1 : 1/2;
+
+pxc0 (x1, x2) := exp(-1/2*([x1, x2] - xc0_mean) . inv_cov0 . ([x1, x2] - xc0_mean))
+                   / sqrt(determinant(cov0)) / (2*%pi);
+
+pxc1 (x1, x2) := exp(-1/2*([x1, x2] - xc1_mean) . inv_cov1 . ([x1, x2] - xc1_mean))
+                   / sqrt(determinant(cov1)) / (2*%pi);
+
+pc0x (x1, x2) := block ([px : pxc0 (x1, x2) * pc0 + pxc1 (x1, x2) * pc1], pxc0 (x1, x2) * pc0 / px);
+
+pc1x (x1, x2) := block ([px : pxc0 (x1, x2) * pc0 + pxc1 (x1, x2) * pc1], pxc1 (x1, x2) * pc1 / px);
+
+pc0x (x1, x2) = pc1x (x1, x2);
+map (log, %), logexpand=all;
+lhs (%) - rhs (%) = 0;
+class_boundary_implicit : expand (%);
+solve (%, x2);
+class_boundary_explicit : expand (float (%));
+
+ce (x, c, pcx) := sum (ce1 (x[i], c[i, 1], pcx), i, 1, length (c));
+ce1 (x1, c1, pcx) := block ([p : apply (pcx, [x1[1], x1[2]])], 
+  if equal (p, 0)
+    then (if equal (c1, 0) then 0 else inf)
+  elseif equal (p, 1)
+    then (if equal (c1, 1) then 0 else inf)
+  else
+    (- c1*log(p) - (1 - c1)*log(1 - p)));
+
+ce (x, c, pc1x);
+
+foo (x1, x2) := block ([z : foo_w1*x1 + foo_w2*x2 + foo_b], 1/(1 + exp (-z)));
+
+kill (foo_w1, foo_w2, foo_b);
+load (lbfgs);
+FOM : 'sum (ce1 ('x[i], 'c[i, 1], foo), i, 1, length (c));
+lbfgs (FOM, [foo_w1, foo_w2, foo_b], [1, 1, 0], 1e-6, [1, 0]);
+
+[foo_w1, foo_w2, foo_b] : [1.1544618942040517, -0.34335738089298046, -0.029352256267995706];
+ce (x, c, foo);
+
+addcol (c,
+        makelist (pc1x (x[i, 1], x[i, 2]), i, 1, length (x)),
+        makelist (pc0x (x[i, 1], x[i, 2]), i, 1, length (x)),
+        makelist (foo (x[i, 1], x[i, 2]), i, 1, length (x)));
+
+contour_plot ([pxc0, pxc1, [x1, -2, 2], [x2, -2, 2]], [gnuplot_preamble, "set cntrparam levels 12"], [legend,false]);
+load (implicit_plot);
+implicit_plot (class_boundary_implicit, [x1, -4, 4], [x2, -4, 4]);
+
+load (draw);
+draw2d (point_type=circle, points (xc0), point_type=filled_circle, points (xc1));
