@@ -7,7 +7,7 @@ case class stackoverflow_record_transformed
   OwnerUserId : Long,
   ReputationAtPostCreation : Integer,
   OwnerUndeletedAnswerCountAtPostTime : Integer,
-  OwnerDeletedPostCountAtPostTime : Integer,
+  OwnerClosedPostCountAtPostTime : Integer,
   Tag1 : String,
   Tag2 : String,
   Tag3 : String,
@@ -34,6 +34,25 @@ case class stackoverflow_record
 
 object stackoverflow_parse
 {
+  // Return tuple comprising:
+  // OwnerAgeAtPostCreationInDays : Double,
+  // ReputationAtPostCreation : Integer,
+  // OwnerUndeletedAnswerCountAtPostTime : Integer,
+  // OwnerClosedPostCountAtPostTime : Integer,
+  // Tag1 : String,
+  // Tag2 : String,
+  // Tag3 : String,
+  // Tag4 : String,
+  // Tag5 : String,
+  // StatusClosedForAnyReason : Integer
+  def transform_stackoverflow_records () =
+  {
+    x.map { (OwnerUserId, ((PostCreationDate, OwnerCreationDate, ReputationAtPostCreation, OwnerUndeletedAnswerCountAtPostTime, Title, BodyMarkdown, Tag1, Tag2, Tag3, Tag4, Tag5, PostClosedDate, OpenStatus), OwnerClosedPostCountAtPostTime)) => 
+      val OwnerAgeAtPostCreationInDays = (PostCreationDate.getTime - OwnerCreationDate.getTime) / (86400.0 * 1000.0)
+      val StatusClosedForAnyReason = OpenStatus != "open"
+      (OwnerAgeAtPostCreationInDays, ReputationAtPostCreation, OwnerUndeletedAnswerCountAtPostTime, OwnerClosedPostCountAtPostTime, Tag1, Tag2, Tag3, Tag4, Tag5, StatusClosedForAnyReason) }
+  }
+
   def read_stackoverflow_records (sc : SparkContext, filename : String) =
   {
     val date_fmt = new java.text.SimpleDateFormat ("MM/dd/yyyy HH:mm:ss")
@@ -55,8 +74,14 @@ object stackoverflow_parse
                      val  Tag5 = items(12)
                      val  PostClosedDate : Option [java.util.Date] = if (items(13) == "") { None } else { Some (date_fmt.parse (items(13))) }
                      val  OpenStatus = items(14)
-                     stackoverflow_record (PostId, PostCreationDate, OwnerUserId, OwnerCreationDate, ReputationAtPostCreation, OwnerUndeletedAnswerCountAtPostTime, Title, BodyMarkdown, Tag1, Tag2, Tag3, Tag4, Tag5, PostClosedDate, OpenStatus) }
+                     (OwnerUserId, (PostCreationDate, OwnerCreationDate, ReputationAtPostCreation, OwnerUndeletedAnswerCountAtPostTime, Title, BodyMarkdown, Tag1, Tag2, Tag3, Tag4, Tag5, PostClosedDate, OpenStatus)) }
     parsed
+  }
+
+  def count_closed_posts (x : RDD [(Long, Tuple13 [java.util.Date, Long, java.util.Date, Integer, Integer, String, String, String, String, String, String, String, Option [java.util.Date], String])]) =
+  {
+      val x1 = x.aggregateByKey(0)((acc, value) => acc + (if (value._13 == "open") 0 else 1), (acc1, acc2) => acc1 + acc2)
+      x.join (x1)
   }
 
 // Running this main program requires getting a lot of classpath stuff
