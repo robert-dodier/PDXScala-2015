@@ -28,10 +28,34 @@ object stackoverflow_convert
       }
 
       val record = lines.reduce (_ ++ _)
-      val record1 = record.replaceAll ("\"[^\"]*\"", "BAZQUUX")
-      val n = record.length - (record1.length - "BAZQUUX".length)
-      val record2 = record1.replaceAll (",BAZQUUX(BAZQUUX)*,", "," + n + ",")
-      println (record2)
+
+      val r = "\"[^\"]*\"".r.unanchored
+      val quoted_strings = r.findAllIn (record)
+      val record1 = r.replaceAllIn (record, "BAZQUUX")
+      val items = record1.split (',')
+
+      if (items.length != 15)
+        println ("HEY FUNNY LINE: RECORD=" + record + "; ITEMS=" + items)
+      else
+      {
+        val title_bazquux = items(6)
+        val title_quotes_count = ("BAZQUUX".r.unanchored).findAllIn (title_bazquux).length
+        val body_bazquux = items(7)
+        val body_quotes_count = ("BAZQUUX".r.unanchored).findAllIn (body_bazquux).length
+
+        val body_quotes_length = (0 /: (for (s <- quoted_strings drop title_quotes_count) yield s.length))(_ + _)
+        val body_length = body_bazquux.length - body_quotes_count * "BAZQUUX".length + body_quotes_length
+
+        val title_substitute = ""
+        val body_substitute = body_length
+
+        print (items(0))
+        for (i <- Range(1, 6)) print ("," + items(i))
+        print ("," + title_substitute)
+        print ("," + body_substitute)
+        for (i <- Range(8, 15)) print ("," + items(i))
+        println
+      }
     }
   }
 }
