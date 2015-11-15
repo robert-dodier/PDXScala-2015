@@ -2,6 +2,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.SparkConf
 import org.apache.spark.SparkContext
 import java.util.Date
+import java.io.{PrintStream, FileOutputStream}
 
 object stackoverflow_parse
 {
@@ -15,6 +16,13 @@ object stackoverflow_parse
   def numeric_fields_only (x : RDD [(Double, Int, Int, Int, String, String, String, String, String, Int)]) : RDD [(Double, Double, Double, Double, Int)] =
   {
     x.map { case (d: Double, i1: Int, i2: Int, i3: Int, s1: String, s2: String, s3: String, s4: String, s5: String, i4: Int) => (d, i1.toDouble, i2.toDouble, i3.toDouble, i4) }
+  }
+
+  def printAsLibSVM (x: RDD [(Double, Double, Double, Double, Int)], filename: String) =
+  {
+    val s = new PrintStream (new FileOutputStream (filename))
+    x.collect.foreach { case (d1, d2, d3, d4, i) => s.println (i + " 1:" + d1 + " 2:" + d2 + " 3:" + d3 + " 4:" + d4) }
+    s.close
   }
 
   def transform_stackoverflow_records (x : RDD [(Long, ((java.util.Date, java.util.Date, Int, Int, String, String, String, String, String, String, String, Option [java.util.Date], String), Int))]): RDD [(Double, Int, Int, Int, String, String, String, String, String, Int)] =
