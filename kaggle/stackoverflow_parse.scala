@@ -45,13 +45,13 @@ object stackoverflow_parse
   // Tag4 : String,
   // Tag5 : String,
   // StatusClosedForAnyReason : Integer
-  def transform_stackoverflow_records () =
-  {
-    x.map { (OwnerUserId, ((PostCreationDate, OwnerCreationDate, ReputationAtPostCreation, OwnerUndeletedAnswerCountAtPostTime, Title, BodyMarkdown, Tag1, Tag2, Tag3, Tag4, Tag5, PostClosedDate, OpenStatus), OwnerClosedPostCountAtPostTime)) => 
-      val OwnerAgeAtPostCreationInDays = (PostCreationDate.getTime - OwnerCreationDate.getTime) / (86400.0 * 1000.0)
-      val StatusClosedForAnyReason = OpenStatus != "open"
-      (OwnerAgeAtPostCreationInDays, ReputationAtPostCreation, OwnerUndeletedAnswerCountAtPostTime, OwnerClosedPostCountAtPostTime, Tag1, Tag2, Tag3, Tag4, Tag5, StatusClosedForAnyReason) }
-  }
+//def transform_stackoverflow_records (x : RDD [(Long, (Tuple13 [java.util.Date, Long, java.util.Date, Integer, Integer, String, String, String, String, String, String, String, Option [java.util.Date], String], Integer))]) =
+//{
+//  x.map { case (OwnerUserId, ((PostCreationDate, OwnerCreationDate, ReputationAtPostCreation, OwnerUndeletedAnswerCountAtPostTime, Title, BodyMarkdown, Tag1, Tag2, Tag3, Tag4, Tag5, PostClosedDate, OpenStatus), OwnerClosedPostCountAtPostTime)) => 
+//    val OwnerAgeAtPostCreationInDays = (PostCreationDate.getTime - OwnerCreationDate.getTime) / (86400.0 * 1000.0)
+//    val StatusClosedForAnyReason = OpenStatus != "open"
+//    (OwnerAgeAtPostCreationInDays, ReputationAtPostCreation, OwnerUndeletedAnswerCountAtPostTime, OwnerClosedPostCountAtPostTime, Tag1, Tag2, Tag3, Tag4, Tag5, StatusClosedForAnyReason) }
+//}
 
   def read_stackoverflow_records (sc : SparkContext, filename : String) =
   {
@@ -78,9 +78,9 @@ object stackoverflow_parse
     parsed
   }
 
-  def count_closed_posts (x : RDD [(Long, Tuple13 [java.util.Date, Long, java.util.Date, Integer, Integer, String, String, String, String, String, String, String, Option [java.util.Date], String])]) =
+  def count_closed_posts (x : RDD [(Long, Tuple14 [java.util.Date, Long, java.util.Date, Integer, Integer, String, String, String, String, String, String, String, Option [java.util.Date], String])]) =
   {
-      val x1 = x.aggregateByKey(0)((acc, value) => acc + (if (value._13 == "open") 0 else 1), (acc1, acc2) => acc1 + acc2)
+      val x1 = x.aggregateByKey(0)((acc, value) => acc + (if (value._14 == "open") 0 else 1), (acc1, acc2) => acc1 + acc2)
       x.join (x1)
   }
 
