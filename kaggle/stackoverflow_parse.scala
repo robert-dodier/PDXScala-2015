@@ -12,11 +12,16 @@ object stackoverflow_parse
     transform_stackoverflow_records (x1)
   }
 
-  def transform_stackoverflow_records (x : RDD [(Long, ((java.util.Date, java.util.Date, Int, Int, String, String, String, String, String, String, String, Option [java.util.Date], String), Int))]) =
+  def numeric_fields_only (x : RDD [(Double, Int, Int, Int, String, String, String, String, String, Int)]) : RDD [(Double, Double, Double, Double, Int)] =
+  {
+    x.map { case (d: Double, i1: Int, i2: Int, i3: Int, s1: String, s2: String, s3: String, s4: String, s5: String, i4: Int) => (d, i1.toDouble, i2.toDouble, i3.toDouble, i4) }
+  }
+
+  def transform_stackoverflow_records (x : RDD [(Long, ((java.util.Date, java.util.Date, Int, Int, String, String, String, String, String, String, String, Option [java.util.Date], String), Int))]): RDD [(Double, Int, Int, Int, String, String, String, String, String, Int)] =
   {
     x.map { case (ownerUserId : Long, ((postCreationDate : java.util.Date, ownerCreationDate : java.util.Date, reputationAtPostCreation : Int, ownerUndeletedAnswerCountAtPostTime : Int, title : String, bodyMarkdown : String, tag1 : String, tag2 : String, tag3 : String, tag4 : String, tag5 : String, postClosedDate : Option [Date], openStatus : String), ownerClosedPostCountAtPostTime : Int)) => 
       val ownerAgeAtPostCreationInDays = (postCreationDate.getTime - ownerCreationDate.getTime) / (86400.0 * 1000.0)
-      val statusClosedForAnyReason = openStatus != "open"
+      val statusClosedForAnyReason = if (openStatus != "open") 1 else 0
       (ownerAgeAtPostCreationInDays, reputationAtPostCreation, ownerUndeletedAnswerCountAtPostTime, ownerClosedPostCountAtPostTime, tag1, tag2, tag3, tag4, tag5, statusClosedForAnyReason) }
   }
 
