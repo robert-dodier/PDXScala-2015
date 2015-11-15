@@ -11,14 +11,14 @@ object wilcoxon
 
   def U (XC: RDD[(Double, Int)]): Double =
   {
-    val XC_sorted = XC.sortBy (p => p._1)
+    val XC_sorted = XC.sortBy { case (a, b) => a }
     val foo = XC_sorted.zipWithIndex ()
-    val bar = foo.map (pq => (pq._1._1, (pq._1._2, pq._2)))
-    val baz = bar.aggregateByKey ((0L, 0L)) ((a, q) => (a._1 + 1, a._2 + q._2), (a, b) => (a._1 + b._1, a._2 + b._2))
-    val quux = baz.map (pq => (pq._1, pq._2._2 / pq._2._1.toDouble))
+    val bar = foo.map { case ((a, b), c) => (a, (b, c)) }
+    val baz = bar.aggregateByKey ((0L, 0L)) ( {case ((a, b), (c, d)) => (a + 1, b + d)}, {case ((a, b), (c, d)) => (a + c, b + d)} )
+    val quux = baz.map { case (a, (b, c)) => (a, c/b.toDouble) }
     val mumble = XC_sorted.join (quux)
-    val blurf = mumble.filter (pq => pq._2._1 == 1)
-    val rank_sum = blurf.aggregate (0.0) ((a, pq) => a + pq._2._2, (a, b) => a + b)
+    val blurf = mumble.filter { case (a, (b, c)) => b == 1 }
+    val rank_sum = blurf.aggregate (0.0) ( {case (a, (b, (c, d))) => a + d}, {(a, b) => a + b} )
     val n = mumble.count ()
     val n1 = blurf.count ()
     val n0 = n - n1
