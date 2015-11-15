@@ -13,6 +13,7 @@ object stackoverflow_parse
     transform_stackoverflow_records (x1)
   }
 
+  // returns: (ownerAgeAtPostCreationInDays, reputationAtPostCreation, ownerUndeletedAnswerCountAtPostTime, ownerClosedPostCountAtPostTime, bodyMarkdownLength, statusClosedForAnyReason)
   def numeric_fields_only (x : RDD [(Double, Int, Int, Int, Int, String, String, String, String, String, Int)]) : RDD [(Double, Double, Double, Double, Double, Int)] =
   {
     x.map { case (d: Double, i1: Int, i2: Int, i3: Int, i4: Int, s1: String, s2: String, s3: String, s4: String, s5: String, i5: Int) => (d, i1.toDouble, i2.toDouble, i3.toDouble, i4.toDouble, i5) }
@@ -25,6 +26,7 @@ object stackoverflow_parse
     s.close
   }
 
+  // returns: (ownerAgeAtPostCreationInDays, reputationAtPostCreation, ownerUndeletedAnswerCountAtPostTime, ownerClosedPostCountAtPostTime, bodyMarkdownLength, tag1, tag2, tag3, tag4, tag5, statusClosedForAnyReason)
   def transform_stackoverflow_records (x : RDD [(Long, ((java.util.Date, java.util.Date, Int, Int, String, Int, String, String, String, String, String, Option [java.util.Date], String), Int))]): RDD [(Double, Int, Int, Int, Int, String, String, String, String, String, Int)] =
   {
     x.map { case (ownerUserId : Long, ((postCreationDate : java.util.Date, ownerCreationDate : java.util.Date, reputationAtPostCreation : Int, ownerUndeletedAnswerCountAtPostTime : Int, title : String, bodyMarkdownLength : Int, tag1 : String, tag2 : String, tag3 : String, tag4 : String, tag5 : String, postClosedDate : Option [Date], openStatus : String), ownerClosedPostCountAtPostTime : Int)) => 
@@ -33,6 +35,7 @@ object stackoverflow_parse
       (ownerAgeAtPostCreationInDays, reputationAtPostCreation, ownerUndeletedAnswerCountAtPostTime, ownerClosedPostCountAtPostTime, bodyMarkdownLength, tag1, tag2, tag3, tag4, tag5, statusClosedForAnyReason) }
   }
 
+  // returns: (ownerUserId, ((postCreationDate, ownerCreationDate, reputationAtPostCreation, ownerUndeletedAnswerCountAtPostTime, title, bodyMarkdownLength, tag1, tag2, tag3, tag4, tag5, postClosedDate, openStatus), ownerClosedPostCountAtPostTime)) 
   def read_stackoverflow_records (sc : SparkContext, filename : String) =
   {
     val parsed = sc.textFile (filename, 1)
