@@ -3,36 +3,6 @@ import org.apache.spark.SparkConf
 import org.apache.spark.SparkContext
 import java.util.Date
 
-case class stackoverflow_record_transformed
- (OwnerAgeAtPostCreationInDays : Double,
-  OwnerUserId : Long,
-  ReputationAtPostCreation : Int,
-  OwnerUndeletedAnswerCountAtPostTime : Int,
-  OwnerClosedPostCountAtPostTime : Int,
-  Tag1 : String,
-  Tag2 : String,
-  Tag3 : String,
-  Tag4 : String,
-  Tag5 : String,
-  StatusClosedForAnyReason : Int)
-  
-case class stackoverflow_record
- (PostId : Long,
-  PostCreationDate : java.util.Date,
-  OwnerUserId : Long,
-  OwnerCreationDate : java.util.Date,
-  ReputationAtPostCreation : Int,
-  OwnerUndeletedAnswerCountAtPostTime : Int,
-  Title : String,
-  BodyMarkdown : String,
-  Tag1 : String,
-  Tag2 : String,
-  Tag3 : String,
-  Tag4 : String,
-  Tag5 : String,
-  PostClosedDate : Option [java.util.Date],
-  OpenStatus : String)
-
 object stackoverflow_parse
 {
   def read_stackoverflow_records_transformed (sc : SparkContext, filename : String) =
@@ -42,18 +12,6 @@ object stackoverflow_parse
     transform_stackoverflow_records (x1)
   }
 
-  // Return tuple comprising:
-  // OwnerAgeAtPostCreationInDays : Double,
-  // ReputationAtPostCreation : Int,
-  // OwnerUndeletedAnswerCountAtPostTime : Int,
-  // OwnerClosedPostCountAtPostTime : Int,
-  // Tag1 : String,
-  // Tag2 : String,
-  // Tag3 : String,
-  // Tag4 : String,
-  // Tag5 : String,
-  // StatusClosedForAnyReason : Int
-//def transform_stackoverflow_records (x : RDD [(Long, (Tuple13 [java.util.Date, Long, java.util.Date, Int, Int, String, String, String, String, String, String, String, Option [java.util.Date], String], Int))]) =
   def transform_stackoverflow_records (x : RDD [(Long, ((java.util.Date, java.util.Date, Int, Int, String, String, String, String, String, String, String, Option [java.util.Date], String), Int))]) =
   {
     x.map { case (ownerUserId : Long, ((postCreationDate : java.util.Date, ownerCreationDate : java.util.Date, reputationAtPostCreation : Int, ownerUndeletedAnswerCountAtPostTime : Int, title : String, bodyMarkdown : String, tag1 : String, tag2 : String, tag3 : String, tag4 : String, tag5 : String, postClosedDate : Option [Date], openStatus : String), ownerClosedPostCountAtPostTime : Int)) => 
