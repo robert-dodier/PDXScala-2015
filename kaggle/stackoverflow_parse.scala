@@ -35,27 +35,45 @@ object stackoverflow_parse
 
   def read_stackoverflow_records (sc : SparkContext, filename : String) =
   {
-    val date_fmt = new java.text.SimpleDateFormat ("MM/dd/yyyy HH:mm:ss")
     val parsed = sc.textFile (filename, 1)
                    .map { line =>
-                     val items = line.split (',')
-                     val  PostId = items(0).toLong
-                     val  PostCreationDate = date_fmt.parse (items(1))
-                     val  OwnerUserId = items(2).toLong
-                     val  OwnerCreationDate = date_fmt.parse (items(3))
-                     val  ReputationAtPostCreation = items(4).toInt
-                     val  OwnerUndeletedAnswerCountAtPostTime = items(5).toInt
-                     val  Title = items(6)
-                     val  BodyMarkdownLength = items(7).toInt
-                     val  Tag1 = items(8)
-                     val  Tag2 = items(9)
-                     val  Tag3 = items(10)
-                     val  Tag4 = items(11)
-                     val  Tag5 = items(12)
-                     val  PostClosedDate : Option [java.util.Date] = if (items(13) == "") { None } else { Some (date_fmt.parse (items(13))) }
-                     val  OpenStatus = items(14)
-                     (OwnerUserId, (PostCreationDate, OwnerCreationDate, ReputationAtPostCreation, OwnerUndeletedAnswerCountAtPostTime, Title, BodyMarkdownLength, Tag1, Tag2, Tag3, Tag4, Tag5, PostClosedDate, OpenStatus)) }
+                     try
+                     {
+                       val items = line.split (',')
+                       val  PostId = items(0).toLong
+                       val  PostCreationDate = my_date_parse (items(1))
+                       val  OwnerUserId = items(2).toLong
+                       val  OwnerCreationDate = my_date_parse (items(3))
+                       val  ReputationAtPostCreation = if (items(4) == "") 0 else items(4).toInt
+                       val  OwnerUndeletedAnswerCountAtPostTime = if (items(5) == "") 0 else items(5).toInt
+                       val  Title = items(6)
+                       val  BodyMarkdownLength = items(7).toInt
+                       val  Tag1 = items(8)
+                       val  Tag2 = items(9)
+                       val  Tag3 = items(10)
+                       val  Tag4 = items(11)
+                       val  Tag5 = items(12)
+                       val  PostClosedDate : Option [java.util.Date] = if (items(13) == "") { None } else { Some (my_date_parse (items(13))) }
+                       val  OpenStatus = items(14)
+                       (OwnerUserId, (PostCreationDate, OwnerCreationDate, ReputationAtPostCreation, OwnerUndeletedAnswerCountAtPostTime, Title, BodyMarkdownLength, Tag1, Tag2, Tag3, Tag4, Tag5, PostClosedDate, OpenStatus))
+                     }
+                     catch
+                     {
+                       case e: Throwable => { println ("EXCEPTION " + e + " ON THIS LINE: " + line); throw e }
+                     }}
     parsed
+  }
+
+  def my_date_parse (s: String): Date =
+  {
+    val date_fmt_middle_endian = new java.text.SimpleDateFormat ("MM/dd/yyyy HH:mm:ss")
+    val date_fmt_big_endian_ymd = new java.text.SimpleDateFormat ("yyyy-MM-dd")
+
+    try date_fmt_middle_endian.parse (s)
+    catch 
+    {
+      case e: java.text.ParseException => date_fmt_big_endian_ymd.parse (s)
+    }
   }
 
   def count_closed_posts (x : RDD [(Long, (java.util.Date, java.util.Date, Int, Int, String, Int, String, String, String, String, String, Option [java.util.Date], String))]) =
