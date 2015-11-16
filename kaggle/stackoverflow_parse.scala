@@ -1,16 +1,49 @@
+import org.apache.spark.mllib.clustering.{LDA, LDAModel, LDAUtils, LDAOptimizer}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.SparkConf
 import org.apache.spark.SparkContext
 import java.util.Date
 import java.io.{PrintStream, FileOutputStream}
-import org.apache.spark.mllib.linalg.Vectors
+import org.apache.spark.mllib.linalg.{Vector, Vectors}
+import org.apache.spark.mllib.linalg.Matrix
 
 object stackoverflow_parse
 {
+  def tags_topics_scores (x: RDD [(Long, Double, Int, Int, Int, Int, String, String, String, String, String, Int)]): RDD [(Long, Vector)] =
+  {
+    val foo = tags_lda (x)
+    val tags_array = foo._1
+    val model = foo._2
+    tags_topics_scores (x, tags_array, model.topicsMatrix)
+  }
+
+  def tags_topics_scores (x: RDD [(Long, Double, Int, Int, Int, Int, String, String, String, String, String, Int)], tags_array: Array [String], topicsMatrix: Matrix): RDD [(Long, Vector)] =
+  {
+    x.map {case (postId, d, i1, i2, i3, i4, tag1, tag2, tag3, tag4, tag5, i5) => (postId, score_tags (tags_array, topicsMatrix, tag1, tag2, tag3, tag4, tag5))}
+  }
+
+  def score_tags (tags_array: Array [String], topicsMatrix: Matrix, tag1: String, tag2: String, tag3: String, tag4: String, tag5: String) =
+  {
+    val v = make_tag_vector (tags_array, tag1, tag2, tag3, tag4, tag5)
+    topicsMatrix.multiply (v)
+  }
+
+  def tags_lda (x: RDD [(Long, Double, Int, Int, Int, Int, String, String, String, String, String, Int)]) =
+  {
+    val foo = tags_bag_of_words (x)
+    val tags_array = foo._1
+    val y = foo._2.cache
+    val n_topics = 6
+    val lda = new LDA ().setK (n_topics).setMaxIterations (20)
+    val model = lda.run (y)
+    (tags_array, model)
+  }
+
   def tags_bag_of_words (x: RDD [(Long, Double, Int, Int, Int, Int, String, String, String, String, String, Int)]) =
   {
     val tags_array = find_unique_tags (x)
-    x.map {case (postId, d, i1, i2, i3, i4, tag1, tag2, tag3, tag4, tag5, i5) => (postId, make_tag_vector (tags_array, tag1, tag2, tag3, tag4, tag5))}
+    val y = x.map {case (postId, d, i1, i2, i3, i4, tag1, tag2, tag3, tag4, tag5, i5) => (postId, make_tag_vector (tags_array, tag1, tag2, tag3, tag4, tag5))}
+    (tags_array, y)
   }
 
   def find_unique_tags (x: RDD [(Long, Double, Int, Int, Int, Int, String, String, String, String, String, Int)]) =
