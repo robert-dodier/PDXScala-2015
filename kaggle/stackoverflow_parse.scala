@@ -13,29 +13,29 @@ object stackoverflow_parse
     transform_stackoverflow_records (x1)
   }
 
-  // returns: (ownerAgeAtPostCreationInDays, reputationAtPostCreation, ownerUndeletedAnswerCountAtPostTime, ownerClosedPostCountAtPostTime, bodyMarkdownLength, statusClosedForAnyReason)
-  def numeric_fields_only (x : RDD [(Double, Int, Int, Int, Int, String, String, String, String, String, Int)]) : RDD [(Double, Double, Double, Double, Double, Int)] =
+  // returns: (postId, ownerAgeAtPostCreationInDays, reputationAtPostCreation, ownerUndeletedAnswerCountAtPostTime, ownerClosedPostCountAtPostTime, bodyMarkdownLength, statusClosedForAnyReason)
+  def numeric_fields_only (x : RDD [(Long, Double, Int, Int, Int, Int, String, String, String, String, String, Int)]) : RDD [(Long, Double, Double, Double, Double, Double, Int)] =
   {
-    x.map { case (d: Double, i1: Int, i2: Int, i3: Int, i4: Int, s1: String, s2: String, s3: String, s4: String, s5: String, i5: Int) => (d, i1.toDouble, i2.toDouble, i3.toDouble, i4.toDouble, i5) }
+    x.map { case (l: Long, d: Double, i1: Int, i2: Int, i3: Int, i4: Int, s1: String, s2: String, s3: String, s4: String, s5: String, i5: Int) => (l, d, i1.toDouble, i2.toDouble, i3.toDouble, i4.toDouble, i5) }
   }
 
-  def printAsLibSVM (x: RDD [(Double, Double, Double, Double, Double, Int)], filename: String) =
+  def printAsLibSVM (x: RDD [(Long, Double, Double, Double, Double, Double, Int)], filename: String) =
   {
     val s = new PrintStream (new FileOutputStream (filename))
-    x.collect.foreach { case (d1, d2, d3, d4, d5, i) => s.println (i + " 1:" + d1 + " 2:" + d2 + " 3:" + d3 + " 4:" + d4 + " 5:" + d5) }
+    x.collect.foreach { case (l, d1, d2, d3, d4, d5, i) => s.println (i + " 1:" + d1 + " 2:" + d2 + " 3:" + d3 + " 4:" + d4 + " 5:" + d5) }
     s.close
   }
 
-  // returns: (ownerAgeAtPostCreationInDays, reputationAtPostCreation, ownerUndeletedAnswerCountAtPostTime, ownerClosedPostCountAtPostTime, bodyMarkdownLength, tag1, tag2, tag3, tag4, tag5, statusClosedForAnyReason)
-  def transform_stackoverflow_records (x : RDD [(Long, ((java.util.Date, java.util.Date, Int, Int, String, Int, String, String, String, String, String, Option [java.util.Date], String), Int))]): RDD [(Double, Int, Int, Int, Int, String, String, String, String, String, Int)] =
+  // returns: (postId, ownerAgeAtPostCreationInDays, reputationAtPostCreation, ownerUndeletedAnswerCountAtPostTime, ownerClosedPostCountAtPostTime, bodyMarkdownLength, tag1, tag2, tag3, tag4, tag5, statusClosedForAnyReason)
+  def transform_stackoverflow_records (x : RDD [(Long, ((Long, java.util.Date, java.util.Date, Int, Int, String, Int, String, String, String, String, String, Option [java.util.Date], String), Int))]): RDD [(Long, Double, Int, Int, Int, Int, String, String, String, String, String, Int)] =
   {
-    x.map { case (ownerUserId : Long, ((postCreationDate : java.util.Date, ownerCreationDate : java.util.Date, reputationAtPostCreation : Int, ownerUndeletedAnswerCountAtPostTime : Int, title : String, bodyMarkdownLength : Int, tag1 : String, tag2 : String, tag3 : String, tag4 : String, tag5 : String, postClosedDate : Option [Date], openStatus : String), ownerClosedPostCountAtPostTime : Int)) => 
+    x.map { case (ownerUserId : Long, ((postId: Long, postCreationDate : java.util.Date, ownerCreationDate : java.util.Date, reputationAtPostCreation : Int, ownerUndeletedAnswerCountAtPostTime : Int, title : String, bodyMarkdownLength : Int, tag1 : String, tag2 : String, tag3 : String, tag4 : String, tag5 : String, postClosedDate : Option [Date], openStatus : String), ownerClosedPostCountAtPostTime : Int)) => 
       val ownerAgeAtPostCreationInDays = (postCreationDate.getTime - ownerCreationDate.getTime) / (86400.0 * 1000.0)
       val statusClosedForAnyReason = if (openStatus != "open") 1 else 0
-      (ownerAgeAtPostCreationInDays, reputationAtPostCreation, ownerUndeletedAnswerCountAtPostTime, ownerClosedPostCountAtPostTime, bodyMarkdownLength, tag1, tag2, tag3, tag4, tag5, statusClosedForAnyReason) }
+      (postId, ownerAgeAtPostCreationInDays, reputationAtPostCreation, ownerUndeletedAnswerCountAtPostTime, ownerClosedPostCountAtPostTime, bodyMarkdownLength, tag1, tag2, tag3, tag4, tag5, statusClosedForAnyReason) }
   }
 
-  // returns: (ownerUserId, ((postCreationDate, ownerCreationDate, reputationAtPostCreation, ownerUndeletedAnswerCountAtPostTime, title, bodyMarkdownLength, tag1, tag2, tag3, tag4, tag5, postClosedDate, openStatus), ownerClosedPostCountAtPostTime)) 
+  // returns: (ownerUserId, ((postId, postCreationDate, ownerCreationDate, reputationAtPostCreation, ownerUndeletedAnswerCountAtPostTime, title, bodyMarkdownLength, tag1, tag2, tag3, tag4, tag5, postClosedDate, openStatus), ownerClosedPostCountAtPostTime)) 
   def read_stackoverflow_records (sc : SparkContext, filename : String) =
   {
     val parsed = sc.textFile (filename, 1)
@@ -58,7 +58,7 @@ object stackoverflow_parse
                        val  Tag5 = items(12)
                        val  PostClosedDate : Option [java.util.Date] = if (items(13) == "") { None } else { Some (my_date_parse (items(13))) }
                        val  OpenStatus = items(14)
-                       (OwnerUserId, (PostCreationDate, OwnerCreationDate, ReputationAtPostCreation, OwnerUndeletedAnswerCountAtPostTime, Title, BodyMarkdownLength, Tag1, Tag2, Tag3, Tag4, Tag5, PostClosedDate, OpenStatus))
+                       (OwnerUserId, (PostId, PostCreationDate, OwnerCreationDate, ReputationAtPostCreation, OwnerUndeletedAnswerCountAtPostTime, Title, BodyMarkdownLength, Tag1, Tag2, Tag3, Tag4, Tag5, PostClosedDate, OpenStatus))
                      }
                      catch
                      {
@@ -79,9 +79,9 @@ object stackoverflow_parse
     }
   }
 
-  def count_closed_posts (x : RDD [(Long, (java.util.Date, java.util.Date, Int, Int, String, Int, String, String, String, String, String, Option [java.util.Date], String))]) =
+  def count_closed_posts (x : RDD [(Long, (Long, java.util.Date, java.util.Date, Int, Int, String, Int, String, String, String, String, String, Option [java.util.Date], String))]) =
   {
-      val x1 = x.aggregateByKey(0)((acc, value) => acc + (if (value._13 == "open") 0 else 1), (acc1, acc2) => acc1 + acc2)
+      val x1 = x.aggregateByKey(0)((acc, value) => acc + (if (value._14 == "open") 0 else 1), (acc1, acc2) => acc1 + acc2)
       x.join (x1)
   }
 
