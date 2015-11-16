@@ -70,4 +70,20 @@ class QuadraticDiscriminant (val sc: SparkContext, val x: RDD [LabeledPoint])
     // inv(X) = V*inv(S)*transpose(U)  --- the U is already transposed.
     (V.multiply(invS)).multiply(U)
   }
+
+  def score (x: Vector): Double =
+  {
+    val x_minus_mean_positive = subtract (x, summary_positive.mean)
+    val log_pxc_positive = -1/2.0 * dot (x_minus_mean_positive, cov_positive_inverse.multiply (x_minus_mean_positive))
+
+    val x_minus_mean_negative = subtract (x, summary_negative.mean)
+    val log_pxc_negative = -1/2.0 * dot (x_minus_mean_negative, cov_negative_inverse.multiply (x_minus_mean_negative))
+
+    log_pxc_positive - log_pxc_negative
+  }
+
+  def dot (x: Vector, y: Vector): Double =
+  {
+    (x.toArray zip y.toArray).map {case (a, b) => a*b}.reduce (_ + _)
+  }
 }
