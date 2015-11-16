@@ -3,9 +3,32 @@ import org.apache.spark.SparkConf
 import org.apache.spark.SparkContext
 import java.util.Date
 import java.io.{PrintStream, FileOutputStream}
+import org.apache.spark.mllib.linalg.Vectors
 
 object stackoverflow_parse
 {
+  def tags_bag_of_words (x: RDD [(Long, Double, Int, Int, Int, Int, String, String, String, String, String, Int)]) =
+  {
+    val tags_array = find_unique_tags (x)
+    x.map {case (postId, d, i1, i2, i3, i4, tag1, tag2, tag3, tag4, tag5, i5) => (postId, make_tag_vector (tags_array, tag1, tag2, tag3, tag4, tag5))}
+  }
+
+  def find_unique_tags (x: RDD [(Long, Double, Int, Int, Int, Int, String, String, String, String, String, Int)]) =
+  {
+    val tags = scala.collection.mutable.Set [String] ()
+
+    x.foreach (r => {tags += r._7; tags += r._8; tags += r._9; tags += r._10; tags += r._11})
+
+    val tags_array = tags.toArray
+    scala.util.Sorting.quickSort (tags_array)
+    tags_array
+  }
+
+  def make_tag_vector (a: Array [String], s1: String, s2: String, s3: String, s4: String, s5: String) =
+  {
+    Vectors.sparse (5, Array (a.indexOf (s1), a.indexOf (s2), a.indexOf (s3), a.indexOf (s4), a.indexOf (s5)), Array (1.0, 1.0, 1.0, 1.0, 1.0))
+  }
+
   def read_stackoverflow_records_transformed (sc : SparkContext, filename : String) =
   {
     val x = read_stackoverflow_records (sc, filename)
