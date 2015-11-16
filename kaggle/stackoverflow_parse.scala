@@ -17,7 +17,11 @@ object stackoverflow_parse
   {
     val tags = scala.collection.mutable.Set [String] ()
 
-    x.foreach (r => {tags += r._7; tags += r._8; tags += r._9; tags += r._10; tags += r._11})
+    x.collect.foreach (r => {if (r._7 != "") tags += r._7
+                             if (r._8 != "") tags += r._8
+                             if (r._9 != "") tags += r._9
+                             if (r._10 != "") tags += r._10
+                             if (r._11 != "") tags += r._11})
 
     val tags_array = tags.toArray
     scala.util.Sorting.quickSort (tags_array)
@@ -26,7 +30,10 @@ object stackoverflow_parse
 
   def make_tag_vector (a: Array [String], s1: String, s2: String, s3: String, s4: String, s5: String) =
   {
-    Vectors.sparse (5, Array (a.indexOf (s1), a.indexOf (s2), a.indexOf (s3), a.indexOf (s4), a.indexOf (s5)), Array (1.0, 1.0, 1.0, 1.0, 1.0))
+    val indices = Array (a.indexOf (s1), a.indexOf (s2), a.indexOf (s3), a.indexOf (s4), a.indexOf (s5))
+    val indices_nonempty = indices.filter (i => i != -1)
+    val values = Array.fill [Double] (indices_nonempty.length) (1.0)
+    Vectors.sparse (a.length, indices_nonempty, values)
   }
 
   def read_stackoverflow_records_transformed (sc : SparkContext, filename : String) =
