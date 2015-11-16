@@ -15,6 +15,7 @@ val bar = x.map (p => (p.label, model.predict (p.features)))
 import org.apache.spark.mllib.evaluation.BinaryClassificationMetrics
 val metrics = new BinaryClassificationMetrics (foo, 20)
 
+metrics.areaUnderROC
 val roc = metrics.roc.collect
 import com.quantifind.charts.Highcharts._
 line (roc)
