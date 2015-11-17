@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+
+<title>Introduction to Spark MLlib and machine learning</title>
+
+<script type="text/javascript">
+window.onload = function() {
+  var imgs = document.getElementsByTagName('img'), i, img;
+  for (i = 0; i < imgs.length; i++) {
+    img = imgs[i];
+    // center an image if it is the only element of its parent
+    if (img.parentElement.childElementCount === 1)
+      img.parentElement.style.textAlign = 'center';
+  }
+};
+</script>
+
+
+
+<!-- MathJax scripts -->
+<script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+
+
+<style type="text/css">
+body, td {
+   font-family: sans-serif;
+   background-color: white;
+   font-size: 13px;
+}
+
+body {
+  max-width: 800px;
+  margin: auto;
+  padding: 1em;
+  line-height: 20px;
+}
+
+tt, code, pre {
+   font-family: 'DejaVu Sans Mono', 'Droid Sans Mono', 'Lucida Console', Consolas, Monaco, monospace;
+}
+
+h1 {
+   font-size:2.2em;
+}
+
+h2 {
+   font-size:1.8em;
+}
+
+h3 {
+   font-size:1.4em;
+}
+
+h4 {
+   font-size:1.0em;
+}
+
+h5 {
+   font-size:0.9em;
+}
+
+h6 {
+   font-size:0.8em;
+}
+
+a:visited {
+   color: rgb(50%, 0%, 50%);
+}
+
+pre, img {
+  max-width: 100%;
+}
+pre {
+  overflow-x: auto;
+}
+pre code {
+   display: block; padding: 0.5em;
+}
+
+code {
+  font-size: 92%;
+  border: 1px solid #ccc;
+}
+
+code[class] {
+  background-color: #F8F8F8;
+}
+
+table, td, th {
+  border: none;
+}
+
+blockquote {
+   color:#666666;
+   margin:0;
+   padding-left: 1em;
+   border-left: 0.5em #EEE solid;
+}
+
+hr {
+   height: 0px;
+   border-bottom: none;
+   border-top-width: thin;
+   border-top-style: dotted;
+   border-top-color: #999999;
+}
+
+@media print {
+   * {
+      background: transparent !important;
+      color: black !important;
+      filter:none !important;
+      -ms-filter: none !important;
+   }
+
+   body {
+      font-size:12pt;
+      max-width:100%;
+   }
+
+   a, a:visited {
+      text-decoration: underline;
+   }
+
+   hr {
+      visibility: hidden;
+      page-break-before: always;
+   }
+
+   pre, blockquote {
+      padding-right: 1em;
+      page-break-inside: avoid;
+   }
+
+   tr, img {
+      page-break-inside: avoid;
+   }
+
+   img {
+      max-width: 100% !important;
+   }
+
+   @page :left {
+      margin: 15mm 20mm 15mm 10mm;
+   }
+
+   @page :right {
+      margin: 15mm 10mm 15mm 20mm;
+   }
+
+   p, h2, h3 {
+      orphans: 3; widows: 3;
+   }
+
+   h2, h3 {
+      page-break-after: avoid;
+   }
+}
+</style>
+
+
+
+</head>
+
+<body>
+<h1>Introduction to Spark MLlib and machine learning</h1>
+
+<h2>Robert Dodier</h2>
+
+<h2>PDX Scala meetup</h2>
+
+<h3>MLlib</h3>
+
+<ul>
+<li>subproject of Apache Spark
+
+<ul>
+<li>other subprojects: Spark Core, Spark SQL, Spark Streaming, GraphX</li>
+</ul></li>
+<li>basic statistical operations</li>
+<li>classification and regression</li>
+<li>clustering</li>
+<li>dimensionality reduction</li>
+<li>feature extraction and transformation</li>
+<li>optimization functions</li>
+<li>implemented in two packages
+
+<ul>
+<li>spark.mllib which is based on RDD&#39;s</li>
+<li>spark.ml which is based on DataFrames (annotated RDD&#39;s)</li>
+</ul></li>
+</ul>
+
+<h3>Resilient Distributed Dataset (RDD)</h3>
+
+<ul>
+<li>immutable
+
+<ul>
+<li>bulk operations transform one RDD into another</li>
+<li>create initial RDD from a file or data in memory</li>
+</ul></li>
+<li>distributed
+
+<ul>
+<li>partitions of records on nodes in a Spark cluster</li>
+</ul></li>
+<li>fault-tolerant
+
+<ul>
+<li>recover from failures via lineage</li>
+<li>recompute starting from most recent checkpoint</li>
+<li>no cost if no failures</li>
+</ul></li>
+</ul>
+
+<h3>Operations on RDD&#39;s</h3>
+
+<ul>
+<li>Transformations: map, filter, join, sample, union, &hellip;</li>
+<li>Actions: collect, reduce, count, save</li>
+<li>Reminiscent of working with tables in SQL
+
+<ul>
+<li>to some degree also, vectors/matrices in R, Matlab, etc</li>
+</ul></li>
+</ul>
+
+<h3>About machine learning &hellip;</h3>
+
+<ul>
+<li>ML = statistical modeling applied to large, unstructured data sets</li>
+<li>Classification, regression, clustering, latent variable models, &hellip;</li>
+<li>Training = estimating parameters (usually maximum likelihood)</li>
+<li>What can you do with a ML model? We&#39;ll come back to that later </li>
+</ul>
+
+<h3>Opportunities for parallelism in ML</h3>
+
+<ul>
+<li>Applying same operation to many records
+
+<ul>
+<li>e.g. log likelihood = sum over records</li>
+</ul></li>
+<li>partition available data into blocks, apply operation over blocks
+
+<ul>
+<li>e.g. cross validation = train and test on partitions</li>
+</ul></li>
+<li>Monte Carlo methods
+
+<ul>
+<li>averaging over parameters, e.g. Markov chain MC</li>
+<li>randomized search for parameter estimation</li>
+<li>ensemble methods (model averaging)</li>
+</ul></li>
+</ul>
+
+<h3>ML tasks and MLlib</h3>
+
+<ul>
+<li>Classification models
+
+<ul>
+<li>LogisticRegression, SVMModel, MultilayerPerceptronClassifier,
+NaiveBayesModel, RandomForestClassifier</li>
+</ul></li>
+<li>Regression models
+
+<ul>
+<li>LinearRegressionModel, RandomForestRegressor, IsotonicRegression</li>
+</ul></li>
+<li>Survival models
+
+<ul>
+<li>AFTSurvivalRegression</li>
+</ul></li>
+<li>Clustering
+
+<ul>
+<li>LDAModel, GaussianMixtureModel, KMeansModel</li>
+</ul></li>
+<li>Dimensionality reduction
+
+<ul>
+<li>SingularValueDecomposition, PCA, EigenValueDecomposition</li>
+</ul></li>
+<li>Optimization
+
+<ul>
+<li>somethingWithSGD, LBFGS</li>
+</ul></li>
+</ul>
+
+<h3>Classification</h3>
+
+<ul>
+<li>It&#39;s assumed that there are distinct groups</li>
+<li>Some characteristics are observable</li>
+<li>Given observations, figure out which group</li>
+<li>When observables are continuous variables,
+this amounts to drawing curves to divide groups</li>
+<li>Different classification models yield different curves</li>
+</ul>
+
+<h3>Logistic regression and neural network classifiers</h3>
+
+<ul>
+<li>When each group has a Gaussian distribution,
+dividing curves are conic sections</li>
+<li>If groups have the same covariance,
+curves are straight lines and class probability is
+\(1/(1 + \exp(-z))\) where \(z\) is a weighted combination
+of observables</li>
+<li>Logistic regression is just that same-covariance model</li>
+<li>Neural network (a.k.a. multilayer perceptron) is a number of
+logistic regression models lumped together</li>
+<li>Each hidden unit is essentially a feature detector;
+final output is logistic regression model of features</li>
+</ul>
+
+<h3>Classifiers applied to example problem</h3>
+
+<ul>
+<li>From Kaggle, Stackoverflow questions closed for various reasons</li>
+<li>Training sample 140k records, containing all closed and equal number open</li>
+<li>Condense all reasons into one, so target is closed/not closed</li>
+<li>Construct data set containing five observables:
+owner age, reputation, owner undeleted answer count,
+owner closed post count, body length</li>
+<li>Omit verbiage: title, body text, tags
+
+<ul>
+<li>perhaps use LDA to generate numerical scores for words</li>
+</ul></li>
+</ul>
+
+<h3>An aside: Wilcoxon-Mann-Whitney and input relevance for classification</h3>
+
+<ul>
+<li>WMW statistic is a rank-sum statistic: \(U = \sum_i R^+_i\) where \(R^+_i\)
+is the rank of the \(i\)&#39;th positive example.</li>
+<li>This is equivalent to the area under the ROC curve
+for a logistic regression model using just that one input</li>
+<li>So WMW is a way to assess relevance without building a model</li>
+</ul>
+
+<h3>WMW computed by operations on RDD&#39;s</h3>
+
+<pre><code>  def U (XC: RDD[(Double, Int)]): Double =
+  {
+    val XC_sorted = XC.sortBy { case (a, b) =&gt; a }
+    val foo = XC_sorted.zipWithIndex ()
+    val bar = foo.map { case ((a, b), c) =&gt; (a, (b, c)) }
+    val baz = bar.aggregateByKey ((0L, 0L)) ( {case ((a, b), (c, d)) =&gt; (a + 1, b + d)}, {case ((a, b), (c, d)) =&gt; (a + c, b + d)} )
+    val quux = baz.map { case (a, (b, c)) =&gt; (a, c/b.toDouble) }
+    val mumble = XC_sorted.join (quux)
+    val blurf = mumble.filter { case (a, (b, c)) =&gt; b == 1 }
+    val rank_sum = blurf.aggregate (0.0) ( {case (a, (b, (c, d))) =&gt; a + d}, {(a, b) =&gt; a + b} )
+    val n = mumble.count ()
+    val n1 = blurf.count ()
+    val n0 = n - n1
+
+    ((rank_sum + n1) - n1*(n1 + 1.0)/2.0)/(n1 * n0.toDouble)
+  }
+</code></pre>
+
+<ul>
+<li><code>foo</code>: append rank to sorted values</li>
+<li><code>bar</code>: make input value a key</li>
+<li><code>baz</code>, <code>quux</code>: compute average rank for tied values</li>
+<li><code>mumble</code>: assign average ranks</li>
+<li><code>blurf</code>: extract positive examples</li>
+</ul>
+
+<h3>WMW applied to Stackoverflow data</h3>
+
+<ul>
+<li>Closer to 0 or 1 \(\Rightarrow\) more relevance</li>
+<li>Closer to 1 \(\Rightarrow\) positive correlation</li>
+<li>Closer to 0 \(\Rightarrow\) negative correlation</li>
+<li>Values:
+
+<ul>
+<li>0.817: owner closed post count</li>
+<li>0.338: body length</li>
+<li>0.397: reputation</li>
+<li>0.402: owner undeleted answer count</li>
+<li>0.408: owner age</li>
+</ul></li>
+</ul>
+
+<h3>Logistic regression for Stackoverflow data</h3>
+
+<p>Creating and training the model: (working in spark-shell here)</p>
+
+<pre><code>import org.apache.spark.mllib.util.MLUtils
+val x = MLUtils.loadLibSVMFile (sc, &quot;kaggle/stackoverflow-train-sample-replace-text-by-length-numeric.libsvm&quot;)
+x.cache
+
+import org.apache.spark.mllib.classification.LogisticRegressionWithLBFGS
+val lr = new LogisticRegressionWithLBFGS()
+val model = lr.run (x)
+</code></pre>
+
+<p>Count true/false positive/negative: (&ldquo;in sample&rdquo;, so this is optimistic)</p>
+
+<pre><code>val output_class = x.map (p =&gt; (model.predict (p.features), p.label))
+val true_positives = output_class.filter (ab =&gt; ab._1 == 1.0 &amp;&amp; ab._2 == 1.0).count
+val false_positives = output_class.filter (ab =&gt; ab._1 == 1.0 &amp;&amp; ab._2 == 0.0).count
+val false_negatives = output_class.filter (ab =&gt; ab._1 == 0.0 &amp;&amp; ab._2 == 1.0).count
+val true_negatives = output_class.filter (ab =&gt; ab._1 == 0.0 &amp;&amp; ab._2 == 0.0).count
+</code></pre>
+
+<p>Output:</p>
+
+<pre><code>scala&gt; (true_positives, false_positives, false_negatives, true_negatives)
+res2: (Long, Long, Long, Long) = (57596,14664,12540,55472)
+</code></pre>
+
+<p>Construct ROC curve:</p>
+
+<pre><code>model.clearThreshold
+val output_score = x.map (p =&gt; (model.predict (p.features), p.label))
+import org.apache.spark.mllib.evaluation.BinaryClassificationMetrics
+val metrics = new BinaryClassificationMetrics (output_score, 20)
+val roc = metrics.roc.collect
+metrics.areaUnderROC
+</code></pre>
+
+<p>Output:</p>
+
+<pre><code>scala&gt; metrics.areaUnderROC
+res4: Double = 0.8052311801579356
+</code></pre>
+
+<p>Plot ROC curve: (via Wisp)</p>
+
+<pre><code>import com.quantifind.charts.Highcharts._
+line (roc)
+title (&quot;ROC&quot;)
+xAxis (&quot;False Positive rate&quot;)
+yAxis (&quot;True Positive rate&quot;)
+</code></pre>
+
+<h3>Neural network applied to Stackoverflow data</h3>
+
+<p>Load data and normalize each field to mean 0 and sd 1:</p>
+
+<pre><code>val x = MLUtils.loadLibSVMFile (sc, &quot;kaggle/stackoverflow-train-sample-replace-text-by-length-numeric.libsvm&quot;)
+val summary = Statistics.colStats (x.map {case LabeledPoint (l, f) =&gt; f})
+val means = summary.mean.toArray
+val sds = summary.variance.toArray.map {u =&gt; Math.sqrt (u)}
+val y = x.map {case LabeledPoint (l, f) =&gt; LabeledPoint (l, Vectors.dense (((f.toArray zip means) zip sds).map {case ((u, v), w) =&gt; (u - v)/w}))}
+</code></pre>
+
+<p>Split data into training and testing sets:</p>
+
+<pre><code>val data = y.toDF
+val splits = data.randomSplit(Array(0.5, 0.5), seed = 1L)
+val train = splits(0)
+val test = splits(1)
+</code></pre>
+
+<p>Create and train neural network model:</p>
+
+<pre><code>val layers = Array (5, 14, 2)
+val mlpc = new MultilayerPerceptronClassifier ().setLayers (layers).setMaxIter (100)
+val model = mlpc.fit (train)
+</code></pre>
+
+<p>Compute outputs for test data and evaluate:</p>
+
+<pre><code>val test_result = model.transform (test)
+import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator
+val predictionAndLabels = test_result.select (&quot;prediction&quot;, &quot;label&quot;)
+val evaluator = new MulticlassClassificationEvaluator ()
+evaluator.evaluate (test_result)
+</code></pre>
+
+<p>Output: (result is &ldquo;precision&rdquo; = (true positives)/(all positives))</p>
+
+<pre><code>scala&gt; evaluator.evaluate (test_result)
+res0: Double = 0.8473982981060162
+</code></pre>
+
+<p>Comparable number for logistic regression: <code>57596/(57596 + 14664) = 0.797</code></p>
+
+<h3>Prescriptive analytics: ML in a bigger picture</h3>
+
+<ul>
+<li>A rational decision maximizes expected utility
+
+<ul>
+<li>under assumptions about rational behavior</li>
+</ul></li>
+<li>This is the &ldquo;expected utility hypothesis&rdquo; of decision theory</li>
+<li>Expected utility = value of outcome averaged over possible outcomes
+
+<ul>
+<li>represent uncertainty as probability</li>
+<li>represent value as utility</li>
+</ul></li>
+<li>Purpose of ML is to compute probabilities
+
+<ul>
+<li>e.g. p(accept offer | personal data)</li>
+<li>raises question of &ldquo;calibration&rdquo; of outputs</li>
+</ul></li>
+<li>&ldquo;Prescriptive analytics&rdquo; = ML + decision theory</li>
+</ul>
+
+</body>
+
+</html>
