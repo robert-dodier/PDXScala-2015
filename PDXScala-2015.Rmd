@@ -27,12 +27,14 @@
  * fault-tolerant
      * recover from failures via lineage
      * recompute starting from most recent checkpoint
-     * no cost if not failures
+     * no cost if no failures
 
 ### Operations on RDD's
 
- * transformations: map, filter, join, sample, union, ...
- * actions: collect, reduce, count, save
+ * Transformations: map, filter, join, sample, union, ...
+ * Actions: collect, reduce, count, save
+ * Reminiscent of working with tables in SQL
+     * to some degree also, vectors/matrices in R, Matlab, etc
 
 ### About machine learning ...
 
@@ -46,9 +48,9 @@
  * Applying same operation to many records
      * e.g. log likelihood = sum over records
  * partition available data into blocks, apply operation over blocks
-     * e.g. cross validation = train and test on partitions of record set
+     * e.g. cross validation = train and test on partitions
  * Monte Carlo methods
-     * averaging over parameters, e.g. Markov chain Monte Carlo
+     * averaging over parameters, e.g. Markov chain MC
      * randomized search for parameter estimation
      * ensemble methods (model averaging)
 
@@ -83,7 +85,7 @@
    dividing curves are conic sections
  * If groups have the same covariance,
    curves are straight lines and class probability is
-   $1/(1 + exp(-z))$ where $z$ is a weighted combination
+   $1/(1 + \exp(-z))$ where $z$ is a weighted combination
    of observables
  * Logistic regression is just that same-covariance model
  * Neural network (a.k.a. multilayer perceptron) is a number of
@@ -148,4 +150,60 @@
  
 ### Logistic regression for Stackoverflow data
 
- * RESUME HERE !!
+Creating and training the model: (working in spark-shell here)
+
+```
+import org.apache.spark.mllib.util.MLUtils
+val x = MLUtils.loadLibSVMFile (sc, "kaggle/stackoverflow-train-sample-replace-text-by-length-numeric.libsvm")
+x.cache
+
+import org.apache.spark.mllib.classification.LogisticRegressionWithLBFGS
+val lr = new LogisticRegressionWithLBFGS()
+val model = lr.run (x)
+```
+
+Count true/false positive/negative: ("in sample", so this is optimistic)
+
+```
+val output_class = x.map (p => (model.predict (p.features), p.label))
+val true_positives = output_class.filter (ab => ab._1 == 1.0 && ab._2 == 1.0).count
+val false_positives = output_class.filter (ab => ab._1 == 1.0 && ab._2 == 0.0).count
+val false_negatives = output_class.filter (ab => ab._1 == 0.0 && ab._2 == 1.0).count
+val true_negatives = output_class.filter (ab => ab._1 == 0.0 && ab._2 == 0.0).count
+```
+
+Output:
+
+```
+scala> (true_positives, false_positives, false_negatives, true_negatives)
+res2: (Long, Long, Long, Long) = (57596,14664,12540,55472)
+```
+
+Construct ROC curve:
+
+```
+model.clearThreshold
+val output_score = x.map (p => (model.predict (p.features), p.label))
+import org.apache.spark.mllib.evaluation.BinaryClassificationMetrics
+val metrics = new BinaryClassificationMetrics (output_score, 20)
+val roc = metrics.roc.collect
+metrics.areaUnderROC
+```
+
+Output:
+
+```
+scala> metrics.areaUnderROC
+res4: Double = 0.8052311801579356
+```
+
+Plot ROC curve: (via Wisp)
+
+```
+import com.quantifind.charts.Highcharts._
+line (roc)
+title ("ROC")
+xAxis ("False Positive rate")
+yAxis ("True Positive rate")
+```
+
