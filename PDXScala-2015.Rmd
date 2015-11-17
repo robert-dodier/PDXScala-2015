@@ -1,0 +1,102 @@
+# Introduction to Spark MLlib and machine learning
+
+## Robert Dodier
+## PDX Scala meetup
+
+### MLlib
+
+ * subproject of Apache Spark
+ ** other subprojects: Spark Core, Spark SQL, Spark Streaming, GraphX
+ * basic statistical operations
+ * classification and regression
+ * clustering
+ * dimensionality reduction
+ * feature extraction and transformation
+ * optimization functions
+ * implemented in two packages
+ ** spark.mllib which is based on RDD's
+ ** spark.ml which is based on DataFrames
+
+### Resilient Distributed Dataset (RDD)
+ 
+ * immutable
+ ** bulk operations transform one RDD into another
+ ** create initial RDD from a file or data in memory
+ * distributed
+ ** partitions of records on nodes in a Spark cluster
+ * fault-tolerant
+ ** recover from failures via lineage
+ ** recompute starting from most recent checkpoint
+ ** no cost if not failures
+
+### Operations on RDD's
+
+ * transformations: map, filter, join, sample, union, ...
+ * actions: collect, reduce, count, save
+
+### About machine learning ...
+
+ * ML == statistical modeling applied to large, unstructured data sets
+ * Classification, regression, clustering, latent variable models, ...
+ * Training == estimating parameters (usually maximum likelihood)
+ * What can you do with a ML model? We'll come back to that later 
+
+### Opportunities for parallelism in ML
+
+ * Applying same operation to many records
+ ** e.g. log likelihood = sum over records
+ * partition available data into blocks, apply operation over blocks
+ ** e.g. cross validation = train and test on partitions of record set
+ * Monte Carlo methods
+ ** averaging over parameters, e.g. Markov chain Monte Carlo
+ ** randomized search for parameter estimation
+ ** ensemble methods (model averaging)
+
+### ML tasks and MLlib
+
+ * Classification models
+ ** LogisticRegression, SVMModel, MultilayerPerceptronClassifier,
+    NaiveBayesModel, RandomForestClassifier
+ * Regression models
+ ** LinearRegressionModel, RandomForestRegressor, IsotonicRegression
+ * Survival models
+ ** AFTSurvivalRegression
+ * Clustering
+ ** LDAModel, GaussianMixtureModel, KMeansModel
+ * Dimensionality reduction
+ ** SingularValueDecomposition, PCA, EigenValueDecomposition
+ * Optimization
+ ** somethingWithSGD, LBFGS
+
+### Classification
+
+ * It's assumed that there are distinct groups
+ * Some characteristics are observable
+ * Given observations, figure out which group
+ * When observables are continuous variables,
+   this amounts to drawing curves to divide groups
+ * Different classification models yield different curves
+
+### Logistic regression and neural network classifiers
+
+ * When each group has a Gaussian distribution,
+   dividing curves are conic sections
+ * If groups have the same covariance,
+   curves are straight lines and class probability is
+   $1/(1 + exp(-z))$ where $z$ is a weighted combination
+   of observables
+ * Logistic regression is just that same-covariance model
+ * Neural network (a.k.a. multilayer perceptron) is a number of
+   logistic regression models lumped together
+ * Each hidden unit is essentially a feature detector;
+   final output is logistic regression model of features
+
+### Classifiers applied to example problem
+
+ * From Kaggle, Stackoverflow questions closed for some reason
+ * Construct data set containing five observables:
+   owner age, reputation, owner undeleted answer count,
+   owner closed post count, body length
+ * 
+ 
+
