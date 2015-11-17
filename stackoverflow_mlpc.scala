@@ -16,8 +16,8 @@ val test = splits(1)
 
 import org.apache.spark.ml.classification.MultilayerPerceptronClassifier
 
-// val layers = Array (5, 4, 2)
-val layers = Array (5, 2)
+// val layers = Array (5, 2)
+val layers = Array (5, 14, 2)
 val mlpc = new MultilayerPerceptronClassifier ().setLayers (layers).setMaxIter (100)
 val model = mlpc.fit (train)
 val test_result = model.transform (test)
