@@ -95,11 +95,14 @@
 
 ### Classifiers applied to example problem
 
- * From Kaggle, Stackoverflow questions closed for some reason
+ * From Kaggle, Stackoverflow questions closed for various reasons
+ * Training sample 140k records, containing all closed and equal number open
+ * Condense all reasons into one, so target is closed/not closed
  * Construct data set containing five observables:
    owner age, reputation, owner undeleted answer count,
    owner closed post count, body length
- * RESUME HERE !!
+ * Omit verbiage: title, body text, tags
+     * perhaps use LDA to generate numerical scores for words
 
 ### An aside: Wilcoxon-Mann-Whitney and input relevance for classification
 
@@ -207,3 +210,67 @@ xAxis ("False Positive rate")
 yAxis ("True Positive rate")
 ```
 
+### Neural network applied to Stackoverflow data
+
+Load data and normalize each field to mean 0 and sd 1:
+
+```
+val x = MLUtils.loadLibSVMFile (sc, "kaggle/stackoverflow-train-sample-replace-text-by-length-numeric.libsvm")
+val summary = Statistics.colStats (x.map {case LabeledPoint (l, f) => f})
+val means = summary.mean.toArray
+val sds = summary.variance.toArray.map {u => Math.sqrt (u)}
+val y = x.map {case LabeledPoint (l, f) => LabeledPoint (l, Vectors.dense (((f.toArray zip means) zip sds).map {case ((u, v), w) => (u - v)/w}))}
+```
+
+Split data into training and testing sets:
+
+```
+val data = y.toDF
+val splits = data.randomSplit(Array(0.5, 0.5), seed = 1L)
+val train = splits(0)
+val test = splits(1)
+```
+
+Create and train neural network model:
+
+```
+val layers = Array (5, 14, 2)
+val mlpc = new MultilayerPerceptronClassifier ().setLayers (layers).setMaxIter (100)
+val model = mlpc.fit (train)
+```
+
+Compute outputs for test data and evaluate:
+
+```
+val test_result = model.transform (test)
+import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator
+val predictionAndLabels = test_result.select ("prediction", "label")
+val evaluator = new MulticlassClassificationEvaluator ()
+evaluator.evaluate (test_result)
+```
+
+Output: (result is "precision" = (true positives)/(all positives))
+
+```
+scala> evaluator.evaluate (test_result)
+res0: Double = 0.8473982981060162
+```
+
+Comparable number for logistic regression: `57596/(57596 + 14664) = 0.797`
+
+### Prescriptive analytics: ML in a bigger picture
+
+ * A rational decision maximizes expected utility
+     * under assumptions about rational behavior
+ * This is the "expected utility hypothesis" of decision theory
+ * Expected utility = value of outcome averaged over possible outcomes
+     * represent uncertainty as probability
+     * represent value as utility
+ * Purpose of ML is to compute probabilities
+     * e.g. p(purchase item | purchasing history)
+     * e.g. p(quit service | service history)
+     * e.g. p(accept offer | personal data)
+ * Prescriptive analytics = ML + decision theory
+     * Utility typically = dollars, but might also be time or other resources
+     * e.g. EU(offer) = p(accept | data, offer) * (purchase price -  cost(offer)) - (1 - p(accept | data, offer)) * cost(offer)
+            EU(no offer) = p(accept | data, no offer) * (purchase price)
