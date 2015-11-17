@@ -267,10 +267,6 @@ Comparable number for logistic regression: `57596/(57596 + 14664) = 0.797`
      * represent uncertainty as probability
      * represent value as utility
  * Purpose of ML is to compute probabilities
-     * e.g. p(purchase item | purchasing history)
-     * e.g. p(quit service | service history)
      * e.g. p(accept offer | personal data)
- * Prescriptive analytics = ML + decision theory
-     * Utility typically = dollars, but might also be time or other resources
-     * e.g. EU(offer) = p(accept | data, offer) * (purchase price -  cost(offer)) - (1 - p(accept | data, offer)) * cost(offer)
-            EU(no offer) = p(accept | data, no offer) * (purchase price)
+     * raises question of "calibration" of outputs
+ * "Prescriptive analytics" = ML + decision theory
