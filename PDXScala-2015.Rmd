@@ -15,7 +15,7 @@
  * optimization functions
  * implemented in two packages
      * spark.mllib which is based on RDD's
-     * spark.ml which is based on DataFrames
+     * spark.ml which is based on DataFrames (annotated RDD's)
 
 ### Resilient Distributed Dataset (RDD)
  
