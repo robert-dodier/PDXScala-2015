@@ -6,7 +6,7 @@
 ### MLlib
 
  * subproject of Apache Spark
- ** other subprojects: Spark Core, Spark SQL, Spark Streaming, GraphX
+     * other subprojects: Spark Core, Spark SQL, Spark Streaming, GraphX
  * basic statistical operations
  * classification and regression
  * clustering
@@ -14,20 +14,20 @@
  * feature extraction and transformation
  * optimization functions
  * implemented in two packages
- ** spark.mllib which is based on RDD's
- ** spark.ml which is based on DataFrames
+     * spark.mllib which is based on RDD's
+     * spark.ml which is based on DataFrames
 
 ### Resilient Distributed Dataset (RDD)
  
  * immutable
- ** bulk operations transform one RDD into another
- ** create initial RDD from a file or data in memory
+     * bulk operations transform one RDD into another
+     * create initial RDD from a file or data in memory
  * distributed
- ** partitions of records on nodes in a Spark cluster
+     * partitions of records on nodes in a Spark cluster
  * fault-tolerant
- ** recover from failures via lineage
- ** recompute starting from most recent checkpoint
- ** no cost if not failures
+     * recover from failures via lineage
+     * recompute starting from most recent checkpoint
+     * no cost if not failures
 
 ### Operations on RDD's
 
@@ -36,37 +36,37 @@
 
 ### About machine learning ...
 
- * ML == statistical modeling applied to large, unstructured data sets
+ * ML = statistical modeling applied to large, unstructured data sets
  * Classification, regression, clustering, latent variable models, ...
- * Training == estimating parameters (usually maximum likelihood)
+ * Training = estimating parameters (usually maximum likelihood)
  * What can you do with a ML model? We'll come back to that later 
 
 ### Opportunities for parallelism in ML
 
  * Applying same operation to many records
- ** e.g. log likelihood = sum over records
+     * e.g. log likelihood = sum over records
  * partition available data into blocks, apply operation over blocks
- ** e.g. cross validation = train and test on partitions of record set
+     * e.g. cross validation = train and test on partitions of record set
  * Monte Carlo methods
- ** averaging over parameters, e.g. Markov chain Monte Carlo
- ** randomized search for parameter estimation
- ** ensemble methods (model averaging)
+     * averaging over parameters, e.g. Markov chain Monte Carlo
+     * randomized search for parameter estimation
+     * ensemble methods (model averaging)
 
 ### ML tasks and MLlib
 
  * Classification models
- ** LogisticRegression, SVMModel, MultilayerPerceptronClassifier,
+     * LogisticRegression, SVMModel, MultilayerPerceptronClassifier,
     NaiveBayesModel, RandomForestClassifier
  * Regression models
- ** LinearRegressionModel, RandomForestRegressor, IsotonicRegression
+     * LinearRegressionModel, RandomForestRegressor, IsotonicRegression
  * Survival models
- ** AFTSurvivalRegression
+     * AFTSurvivalRegression
  * Clustering
- ** LDAModel, GaussianMixtureModel, KMeansModel
+     * LDAModel, GaussianMixtureModel, KMeansModel
  * Dimensionality reduction
- ** SingularValueDecomposition, PCA, EigenValueDecomposition
+     * SingularValueDecomposition, PCA, EigenValueDecomposition
  * Optimization
- ** somethingWithSGD, LBFGS
+     * somethingWithSGD, LBFGS
 
 ### Classification
 
@@ -97,6 +97,55 @@
  * Construct data set containing five observables:
    owner age, reputation, owner undeleted answer count,
    owner closed post count, body length
- * 
- 
+ * RESUME HERE !!
 
+### An aside: Wilcoxon-Mann-Whitney and input relevance for classification
+
+ * WMW statistic is a rank-sum statistic: $U = \sum_i R^+_i$ where $R^+_i$
+   is the rank of the $i$'th positive example.
+ * This is equivalent to the area under the ROC curve
+   for a logistic regression model using just that one input
+ * So WMW is a way to assess relevance without building a model
+
+### WMW computed by operations on RDD's
+
+```
+  def U (XC: RDD[(Double, Int)]): Double =
+  {
+    val XC_sorted = XC.sortBy { case (a, b) => a }
+    val foo = XC_sorted.zipWithIndex ()
+    val bar = foo.map { case ((a, b), c) => (a, (b, c)) }
+    val baz = bar.aggregateByKey ((0L, 0L)) ( {case ((a, b), (c, d)) => (a + 1, b + d)}, {case ((a, b), (c, d)) => (a + c, b + d)} )
+    val quux = baz.map { case (a, (b, c)) => (a, c/b.toDouble) }
+    val mumble = XC_sorted.join (quux)
+    val blurf = mumble.filter { case (a, (b, c)) => b == 1 }
+    val rank_sum = blurf.aggregate (0.0) ( {case (a, (b, (c, d))) => a + d}, {(a, b) => a + b} )
+    val n = mumble.count ()
+    val n1 = blurf.count ()
+    val n0 = n - n1
+
+    ((rank_sum + n1) - n1*(n1 + 1.0)/2.0)/(n1 * n0.toDouble)
+  }
+```
+
+ * `foo`: append rank to sorted values
+ * `bar`: make input value a key
+ * `baz`, `quux`: compute average rank for tied values
+ * `mumble`: assign average ranks
+ * `blurf`: extract positive examples
+
+### WMW applied to Stackoverflow data
+
+ * Closer to 0 or 1 $\Rightarrow$ more relevance
+ * Closer to 1 $\Rightarrow$ positive correlation
+ * Closer to 0 $\Rightarrow$ negative correlation
+ * Values:
+     * 0.817: owner closed post count
+     * 0.338: body length
+     * 0.397: reputation
+     * 0.402: owner undeleted answer count
+     * 0.408: owner age
+ 
+### Logistic regression for Stackoverflow data
+
+ * RESUME HERE !!
