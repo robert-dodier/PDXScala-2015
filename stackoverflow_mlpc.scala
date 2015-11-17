@@ -20,8 +20,8 @@ import org.apache.spark.ml.classification.MultilayerPerceptronClassifier
 val layers = Array (5, 14, 2)
 val mlpc = new MultilayerPerceptronClassifier ().setLayers (layers).setMaxIter (100)
 val model = mlpc.fit (train)
-val test_result = model.transform (test)
 
+val test_result = model.transform (test)
 import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator
 val predictionAndLabels = test_result.select ("prediction", "label")
 val evaluator = new MulticlassClassificationEvaluator ()
