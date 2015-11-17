@@ -6,15 +6,23 @@ import java.util.Date
 import java.io.{PrintStream, FileOutputStream}
 import org.apache.spark.mllib.linalg.{Vector, Vectors}
 import org.apache.spark.mllib.linalg.Matrix
+import org.apache.spark.mllib.regression.LabeledPoint
 
 object stackoverflow_parse
 {
+  def replace_tags_with_scores (x: RDD [(Long, Double, Int, Int, Int, Int, String, String, String, String, String, Int)]) =
+  {
+    val tags_scores = tags_topics_scores (x)
+    val x1 = (x.map {case (postId, d, i1, i2, i3, i4, tag1, tag2, tag3, tag4, tag5, i5) => (postId, (i5, d, i1, i2, i3, i4))}).join (tags_scores)
+    x1.map {case (postId, ((i5, d, i1, i2, i3, i4), v)) => new LabeledPoint (i5, Vectors.dense (d, i1.toDouble, i2.toDouble, i3.toDouble, i4.toDouble, v(0), v(1), v(2), v(3), v(4), v(5)))}
+  }
+
   def tags_topics_scores (x: RDD [(Long, Double, Int, Int, Int, Int, String, String, String, String, String, Int)]): RDD [(Long, Vector)] =
   {
     val foo = tags_lda (x)
     val tags_array = foo._1
     val model = foo._2
-    tags_topics_scores (x, tags_array, model.topicsMatrix)
+    tags_topics_scores (x, tags_array, model.topicsMatrix.transpose)
   }
 
   def tags_topics_scores (x: RDD [(Long, Double, Int, Int, Int, Int, String, String, String, String, String, Int)], tags_array: Array [String], topicsMatrix: Matrix): RDD [(Long, Vector)] =
